@@ -1,0 +1,12 @@
+# Windows Integration
+
+This directory contains documentation for Windows platform-specific architecture.
+
+Documents here should describe:
+- DirectX integration strategies
+- Windows Runtime (WinRT) usage
+- Input device support (keyboard, mouse, controller)
+- Windows Store or Steam distribution
+- Windows-specific performance considerations
+
+Focus on making the most of Windows platform capabilities.

@@ -1,0 +1,12 @@
+# Architecture Documents
+
+This directory contains high-level architecture documents for the Custom Monopoly project.
+
+Documents here should describe:
+- System overview and context
+- Major subsystems and their interactions
+- Technology stack decisions and rationale
+- Deployment and runtime architecture
+- Cross-cutting concerns
+
+Use diagrams liberally to communicate complex relationships.

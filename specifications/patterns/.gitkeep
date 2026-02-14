@@ -1,0 +1,12 @@
+# Design Patterns
+
+This directory contains documentation of design patterns used in the Custom Monopoly project.
+
+Documents here should describe:
+- Pattern intent and motivation
+- When and why to use the pattern
+- How it applies to this project
+- Examples from successful games
+- Trade-offs and considerations
+
+Focus on game-specific patterns like ECS, State, Observer, Command, etc.
