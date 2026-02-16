@@ -2,6 +2,15 @@
 
 This directory contains detailed business analysis and implementation planning documents for the Custom Monopoly project.
 
+## Quick Start
+
+**New to the project?** Start here:
+1. Read [MASTER-ROADMAP.md](./MASTER-ROADMAP.md) for executive overview
+2. Review [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) for Phase 1 details
+3. Check [IMPLEMENTATION-PLAN-PHASES-2-6.md](./IMPLEMENTATION-PLAN-PHASES-2-6.md) for remaining phases
+
+**Ready to develop?** Follow the phase-by-phase implementation plan starting with Phase 1.
+
 ## Purpose
 
 The `/planning` directory is used for:
@@ -34,17 +43,29 @@ The `/planning` and `/specifications` directories serve different purposes:
 
 ```
 planning/
-├── README.md                          # This file
-├── epics/                             # Epic-level planning documents
+├── README.md                                   # This file
+├── MASTER-ROADMAP.md                           # ✅ Executive overview and timeline
+├── IMPLEMENTATION-PLAN.md                      # ✅ Phase 1 detailed plan
+├── IMPLEMENTATION-PLAN-PHASES-2-6.md          # ✅ Phases 2-6 detailed plans
+├── epics/                                      # Epic-level planning documents (future)
 │   ├── epic-001-core-gameplay.md
 │   └── epic-002-mod-system.md
-├── features/                          # Feature-level planning documents
+├── features/                                   # Feature-level planning documents (future)
 │   ├── feature-001-game-board.md
 │   ├── feature-002-player-management.md
 │   └── feature-003-ai-opponents.md
-└── roadmap/                           # Project roadmaps and timelines
+└── roadmap/                                    # Additional roadmap details (future)
     └── project-roadmap.md
 ```
+
+### Current Planning Documents (Completed)
+
+#### Master Documents
+1. **[MASTER-ROADMAP.md](./MASTER-ROADMAP.md)** - Executive summary, timeline, all phases overview
+2. **[IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md)** - Phase 1 (Foundation & Core Architecture) in detail
+3. **[IMPLEMENTATION-PLAN-PHASES-2-6.md](./IMPLEMENTATION-PLAN-PHASES-2-6.md)** - Phases 2-6 in detail
+
+These documents provide a complete, iterative implementation plan for the entire 18-week development cycle.
 
 ## Document Types
 
