@@ -38,17 +38,17 @@ namespace MonopolyFrenzy.Core
         /// <summary>
         /// Gets the current phase of the game.
         /// </summary>
-        public GamePhase CurrentPhase { get; private set; }
+        public GamePhase CurrentPhase { get; set; }
         
         /// <summary>
         /// Gets the current player whose turn it is.
         /// </summary>
-        public Player CurrentPlayer { get; private set; }
+        public Player CurrentPlayer { get; set; }
         
         /// <summary>
         /// Gets the current turn number.
         /// </summary>
-        public int TurnNumber { get; private set; }
+        public int TurnNumber { get; set; }
         
         /// <summary>
         /// Gets whether the game can be started (2-6 players).
@@ -185,18 +185,13 @@ namespace MonopolyFrenzy.Core
             if (CurrentPhase != GamePhase.Playing)
                 return;
             
+            // Increment turn number
+            TurnNumber++;
+            
             // Find next non-bankrupt player
-            int startIndex = _currentPlayerIndex;
             do
             {
                 _currentPlayerIndex = (_currentPlayerIndex + 1) % Players.Count;
-                
-                // If we've cycled through all players, increment turn
-                if (_currentPlayerIndex <= startIndex || _currentPlayerIndex == 0)
-                {
-                    TurnNumber++;
-                }
-                
                 CurrentPlayer = Players[_currentPlayerIndex];
                 
                 // Break if we found a non-bankrupt player
