@@ -1,5 +1,6 @@
 using System;
 using MonopolyFrenzy.Core;
+using MonopolyFrenzy.Events;
 using Newtonsoft.Json;
 
 namespace MonopolyFrenzy.Commands
@@ -12,6 +13,7 @@ namespace MonopolyFrenzy.Commands
         private readonly GameState _gameState;
         private readonly Player _player;
         private readonly int _spaces;
+        private readonly EventBus _eventBus;
         private int _previousPosition;
         private bool _passedGo;
         
@@ -36,11 +38,13 @@ namespace MonopolyFrenzy.Commands
         /// <param name="gameState">The current game state.</param>
         /// <param name="player">The player to move.</param>
         /// <param name="spaces">The number of spaces to move (positive forward, negative backward).</param>
-        public MoveCommand(GameState gameState, Player player, int spaces)
+        /// <param name="eventBus">The event bus for publishing events.</param>
+        public MoveCommand(GameState gameState, Player player, int spaces, EventBus eventBus = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _player = player ?? throw new ArgumentNullException(nameof(player));
             _spaces = spaces;
+            _eventBus = eventBus;
         }
         
         public CommandResult Execute()
@@ -63,6 +67,27 @@ namespace MonopolyFrenzy.Commands
                 // Wrap position to 0-39 range
                 NewPosition = ((newPosition % 40) + 40) % 40;
                 _player.Position = NewPosition;
+                
+                // Publish player moved event
+                _eventBus?.Publish(new PlayerMovedEvent
+                {
+                    PlayerId = _player.Id,
+                    FromPosition = _previousPosition,
+                    ToPosition = NewPosition,
+                    PassedGo = _passedGo
+                });
+                
+                // Publish money transferred event if passed GO
+                if (_passedGo)
+                {
+                    _eventBus?.Publish(new MoneyTransferredEvent
+                    {
+                        FromPlayerId = "Bank",
+                        ToPlayerId = _player.Id,
+                        Amount = 200,
+                        Reason = "Passed GO"
+                    });
+                }
                 
                 return CommandResult.Successful(new
                 {

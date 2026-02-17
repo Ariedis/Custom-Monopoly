@@ -1,5 +1,6 @@
 using System;
 using MonopolyFrenzy.Core;
+using MonopolyFrenzy.Events;
 using Newtonsoft.Json;
 
 namespace MonopolyFrenzy.Commands
@@ -12,6 +13,7 @@ namespace MonopolyFrenzy.Commands
         private readonly GameState _gameState;
         private readonly Player _player;
         private readonly Property _property;
+        private readonly EventBus _eventBus;
         private Player _previousOwner;
         
         /// <summary>
@@ -25,11 +27,13 @@ namespace MonopolyFrenzy.Commands
         /// <param name="gameState">The current game state.</param>
         /// <param name="player">The player purchasing the property.</param>
         /// <param name="property">The property to purchase.</param>
-        public BuyPropertyCommand(GameState gameState, Player player, Property property)
+        /// <param name="eventBus">The event bus for publishing events.</param>
+        public BuyPropertyCommand(GameState gameState, Player player, Property property, EventBus eventBus = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _player = player ?? throw new ArgumentNullException(nameof(player));
             _property = property ?? throw new ArgumentNullException(nameof(property));
+            _eventBus = eventBus;
         }
         
         public CommandResult Execute()
@@ -53,6 +57,15 @@ namespace MonopolyFrenzy.Commands
                 _player.RemoveMoney(_property.PurchasePrice);
                 _property.Owner = _player;
                 _player.OwnedProperties.Add(_property);
+                
+                // Publish property purchased event
+                _eventBus?.Publish(new PropertyPurchasedEvent
+                {
+                    PlayerId = _player.Id,
+                    PropertyName = _property.Name,
+                    Price = _property.PurchasePrice,
+                    PlayerMoneyRemaining = _player.Money
+                });
                 
                 return CommandResult.Successful(new
                 {

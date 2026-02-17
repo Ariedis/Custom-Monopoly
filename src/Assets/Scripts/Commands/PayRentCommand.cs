@@ -1,5 +1,6 @@
 using System;
 using MonopolyFrenzy.Core;
+using MonopolyFrenzy.Events;
 using MonopolyFrenzy.Rules;
 using Newtonsoft.Json;
 
@@ -14,6 +15,7 @@ namespace MonopolyFrenzy.Commands
         private readonly Player _player;
         private readonly Space _space;
         private readonly int _diceRoll;
+        private readonly EventBus _eventBus;
         private int _rentAmount;
         private Player _owner;
         
@@ -29,12 +31,14 @@ namespace MonopolyFrenzy.Commands
         /// <param name="player">The player paying rent.</param>
         /// <param name="space">The space landed on.</param>
         /// <param name="diceRoll">The dice roll (for utilities).</param>
-        public PayRentCommand(GameState gameState, Player player, Space space, int diceRoll = 0)
+        /// <param name="eventBus">The event bus for publishing events.</param>
+        public PayRentCommand(GameState gameState, Player player, Space space, int diceRoll = 0, EventBus eventBus = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _player = player ?? throw new ArgumentNullException(nameof(player));
             _space = space ?? throw new ArgumentNullException(nameof(space));
             _diceRoll = diceRoll;
+            _eventBus = eventBus;
         }
         
         public CommandResult Execute()
@@ -82,6 +86,15 @@ namespace MonopolyFrenzy.Commands
                 // Transfer money
                 _player.RemoveMoney(_rentAmount);
                 _owner.AddMoney(_rentAmount);
+                
+                // Publish money transferred event
+                _eventBus?.Publish(new MoneyTransferredEvent
+                {
+                    FromPlayerId = _player.Id,
+                    ToPlayerId = _owner.Id,
+                    Amount = _rentAmount,
+                    Reason = $"Rent for {_space.Name}"
+                });
                 
                 return CommandResult.Successful(new
                 {

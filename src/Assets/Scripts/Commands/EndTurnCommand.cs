@@ -1,5 +1,6 @@
 using System;
 using MonopolyFrenzy.Core;
+using MonopolyFrenzy.Events;
 using Newtonsoft.Json;
 
 namespace MonopolyFrenzy.Commands
@@ -10,6 +11,7 @@ namespace MonopolyFrenzy.Commands
     public class EndTurnCommand : ICommand
     {
         private readonly GameState _gameState;
+        private readonly EventBus _eventBus;
         private Player _previousPlayer;
         private int _previousTurnNumber;
         
@@ -17,9 +19,11 @@ namespace MonopolyFrenzy.Commands
         /// Initializes a new instance of the EndTurnCommand class.
         /// </summary>
         /// <param name="gameState">The current game state.</param>
-        public EndTurnCommand(GameState gameState)
+        /// <param name="eventBus">The event bus for publishing events.</param>
+        public EndTurnCommand(GameState gameState, EventBus eventBus = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
+            _eventBus = eventBus;
         }
         
         public CommandResult Execute()
@@ -30,8 +34,22 @@ namespace MonopolyFrenzy.Commands
                 _previousPlayer = _gameState.CurrentPlayer;
                 _previousTurnNumber = _gameState.TurnNumber;
                 
+                // Publish turn ended event
+                _eventBus?.Publish(new TurnEndedEvent
+                {
+                    PlayerId = _previousPlayer?.Id,
+                    TurnNumber = _previousTurnNumber
+                });
+                
                 // Advance to next turn
                 _gameState.NextTurn();
+                
+                // Publish turn started event
+                _eventBus?.Publish(new TurnStartedEvent
+                {
+                    PlayerId = _gameState.CurrentPlayer?.Id,
+                    TurnNumber = _gameState.TurnNumber
+                });
                 
                 return CommandResult.Successful(new
                 {
