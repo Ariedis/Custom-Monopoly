@@ -1,5 +1,6 @@
 using System;
 using MonopolyFrenzy.Core;
+using MonopolyFrenzy.Events;
 using Newtonsoft.Json;
 
 namespace MonopolyFrenzy.Commands
@@ -12,6 +13,7 @@ namespace MonopolyFrenzy.Commands
         private readonly GameState _gameState;
         private readonly Player _player;
         private readonly Random _random;
+        private readonly EventBus _eventBus;
         private int _die1;
         private int _die2;
         private int _previousPosition;
@@ -42,23 +44,26 @@ namespace MonopolyFrenzy.Commands
         /// <param name="gameState">The current game state.</param>
         /// <param name="player">The player rolling the dice.</param>
         /// <param name="random">Random number generator (optional, for testing).</param>
-        public RollDiceCommand(GameState gameState, Player player, Random random = null)
+        /// <param name="eventBus">The event bus for publishing events.</param>
+        public RollDiceCommand(GameState gameState, Player player, Random random = null, EventBus eventBus = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _player = player ?? throw new ArgumentNullException(nameof(player));
             _random = random ?? new Random();
+            _eventBus = eventBus;
         }
         
         /// <summary>
         /// Initializes with predetermined dice values (for testing).
         /// </summary>
-        public RollDiceCommand(GameState gameState, Player player, int die1, int die2)
+        public RollDiceCommand(GameState gameState, Player player, int die1, int die2, EventBus eventBus = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _player = player ?? throw new ArgumentNullException(nameof(player));
             _die1 = die1;
             _die2 = die2;
             _random = null;
+            _eventBus = eventBus;
         }
         
         public CommandResult Execute()
@@ -75,6 +80,16 @@ namespace MonopolyFrenzy.Commands
                 // Validate dice values
                 if (_die1 < 1 || _die1 > 6 || _die2 < 1 || _die2 > 6)
                     return CommandResult.Failed("Invalid dice values");
+                
+                // Publish dice rolled event
+                _eventBus?.Publish(new DiceRolledEvent
+                {
+                    PlayerId = _player.Id,
+                    Die1 = _die1,
+                    Die2 = _die2,
+                    Total = Total,
+                    IsDoubles = IsDoubles
+                });
                 
                 return CommandResult.Successful(new
                 {

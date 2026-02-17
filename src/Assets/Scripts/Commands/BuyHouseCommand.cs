@@ -1,5 +1,6 @@
 using System;
 using MonopolyFrenzy.Core;
+using MonopolyFrenzy.Events;
 using MonopolyFrenzy.Rules;
 using Newtonsoft.Json;
 
@@ -13,6 +14,7 @@ namespace MonopolyFrenzy.Commands
         private readonly GameState _gameState;
         private readonly Player _player;
         private readonly Property _property;
+        private readonly EventBus _eventBus;
         private int _previousHouses;
         private bool _previousHadHotel;
         
@@ -27,11 +29,13 @@ namespace MonopolyFrenzy.Commands
         /// <param name="gameState">The current game state.</param>
         /// <param name="player">The player buying the house.</param>
         /// <param name="property">The property to build on.</param>
-        public BuyHouseCommand(GameState gameState, Player player, Property property)
+        /// <param name="eventBus">The event bus for publishing events.</param>
+        public BuyHouseCommand(GameState gameState, Player player, Property property, EventBus eventBus = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _player = player ?? throw new ArgumentNullException(nameof(player));
             _property = property ?? throw new ArgumentNullException(nameof(property));
+            _eventBus = eventBus;
         }
         
         public CommandResult Execute()
@@ -58,6 +62,16 @@ namespace MonopolyFrenzy.Commands
                     _property.Houses = 0; // Remove houses when hotel is built
                     _player.RemoveMoney(_property.HouseCost);
                     
+                    // Publish house purchased event
+                    _eventBus?.Publish(new HousePurchasedEvent
+                    {
+                        PlayerId = _player.Id,
+                        PropertyName = _property.Name,
+                        HouseCount = 0,
+                        IsHotel = true,
+                        Cost = _property.HouseCost
+                    });
+                    
                     return CommandResult.Successful(new
                     {
                         PropertyName = _property.Name,
@@ -77,6 +91,16 @@ namespace MonopolyFrenzy.Commands
                     IsHotel = false;
                     _property.Houses++;
                     _player.RemoveMoney(_property.HouseCost);
+                    
+                    // Publish house purchased event
+                    _eventBus?.Publish(new HousePurchasedEvent
+                    {
+                        PlayerId = _player.Id,
+                        PropertyName = _property.Name,
+                        HouseCount = _property.Houses,
+                        IsHotel = false,
+                        Cost = _property.HouseCost
+                    });
                     
                     return CommandResult.Successful(new
                     {
