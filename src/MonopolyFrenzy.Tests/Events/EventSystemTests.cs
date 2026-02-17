@@ -648,9 +648,69 @@ namespace MonopolyFrenzy.Tests.Events
     
     public class EventBus : IEventBus
     {
-        public void Subscribe<T>(Action<T> handler) where T : class { }
-        public void Unsubscribe<T>(Action<T> handler) where T : class { }
-        public void Publish<T>(T eventData) where T : class { }
+        private readonly Dictionary<Type, List<Delegate>> _subscribers = new Dictionary<Type, List<Delegate>>();
+        private readonly object _lock = new object();
+        
+        public void Subscribe<T>(Action<T> handler) where T : class
+        {
+            if (handler == null)
+                throw new ArgumentNullException(nameof(handler));
+            
+            lock (_lock)
+            {
+                var eventType = typeof(T);
+                if (!_subscribers.ContainsKey(eventType))
+                {
+                    _subscribers[eventType] = new List<Delegate>();
+                }
+                _subscribers[eventType].Add(handler);
+            }
+        }
+        
+        public void Unsubscribe<T>(Action<T> handler) where T : class
+        {
+            if (handler == null)
+                return;
+            
+            lock (_lock)
+            {
+                var eventType = typeof(T);
+                if (_subscribers.ContainsKey(eventType))
+                {
+                    _subscribers[eventType].Remove(handler);
+                }
+            }
+        }
+        
+        public void Publish<T>(T eventData) where T : class
+        {
+            if (eventData == null)
+                return;
+            
+            List<Delegate> handlersToCall;
+            lock (_lock)
+            {
+                var eventType = typeof(T);
+                if (!_subscribers.ContainsKey(eventType))
+                    return;
+                
+                // Create a copy to avoid modification during iteration
+                handlersToCall = new List<Delegate>(_subscribers[eventType]);
+            }
+            
+            // Call handlers outside the lock
+            foreach (var handler in handlersToCall)
+            {
+                try
+                {
+                    ((Action<T>)handler)(eventData);
+                }
+                catch
+                {
+                    // Continue with other handlers even if one throws
+                }
+            }
+        }
     }
     
     // Event classes

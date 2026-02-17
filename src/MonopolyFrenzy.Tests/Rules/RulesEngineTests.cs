@@ -1146,34 +1146,389 @@ namespace MonopolyFrenzy.Tests.Rules
     // Rules Engine and supporting classes
     public class RulesEngine
     {
-        public RulesEngine(GameContext context) { }
-        public bool CanPurchaseProperty(Player player, Property property) { return false; }
-        public bool CanPurchaseSpace(Player player, Space space) { return false; }
-        public int CalculateRent(Property property) { return 0; }
-        public int CalculateRailroadRent(Property railroad, Player owner) { return 0; }
-        public int CalculateUtilityRent(Property utility, Player owner, int diceRoll) { return 0; }
-        public bool CanBuyHouse(Player player, Property property) { return false; }
-        public bool CanBuyHouseInMonopoly(Player player, Property property, List<Property> monopoly) { return false; }
-        public bool CanBuyHotel(Player player, Property property) { return false; }
-        public ValidationResult ValidateTrade(TradeOffer trade) { return new ValidationResult(); }
-        public void ProcessBankruptcy(Player bankrupt, Player creditor) { }
-        public bool IsBankrupt(Player player, int debt) { return false; }
-        public void SendToJail(Player player) { }
-        public bool CanLeaveJail(Player player, int dice1, int dice2) { return false; }
-        public ActionResult PayToLeaveJail(Player player) { return new ActionResult(); }
-        public ActionResult UseGetOutOfJailFreeCard(Player player) { return new ActionResult(); }
-        public bool MustLeaveJail(Player player) { return false; }
-        public void CollectPassGo(Player player) { }
-        public void ProcessLandingOnGo(Player player) { }
-        public void ConfigureFreeParking(bool collectMoney) { }
-        public void ProcessLandingOnFreeParking(Player player) { }
-        public Auction StartAuction(Property property, List<Player> players) { return null; }
-        public void PlaceBid(Auction auction, Player player, int amount) { }
-        public Player EndAuction(Auction auction) { return null; }
-        public void MortgageProperty(Property property, Player player) { }
-        public ActionResult UnmortgageProperty(Property property, Player player) { return new ActionResult(); }
-        public bool CanMortgageProperty(Property property) { return false; }
-        public void ApplyCardEffect(Card card, Player player) { }
+        private readonly GameContext _context;
+        private bool _freeParkingCollectMoney = false;
+        
+        public RulesEngine(GameContext context)
+        {
+            _context = context;
+        }
+        
+        public bool CanPurchaseProperty(Player player, Property property)
+        {
+            if (property == null || player == null) return false;
+            if (property.Owner != null) return false;
+            if (player.Money < property.Price) return false;
+            return true;
+        }
+        
+        public bool CanPurchaseSpace(Player player, Space space)
+        {
+            if (space == null || player == null) return false;
+            // Only Property, Railroad, and Utility spaces can be purchased
+            return space.Type == SpaceType.Property || 
+                   space.Type == SpaceType.Railroad || 
+                   space.Type == SpaceType.Utility;
+        }
+        
+        public int CalculateRent(Property property)
+        {
+            if (property == null || property.IsMortgaged) return 0;
+            
+            if (property.HasHotel)
+                return property.RentWithHotel;
+            
+            int rent;
+            switch (property.HouseCount)
+            {
+                case 1: rent = property.RentWithOneHouse; break;
+                case 2: rent = property.RentWithTwoHouses; break;
+                case 3: rent = property.RentWithTwoHouses; break; // Assuming same as 2
+                case 4: rent = property.RentWithTwoHouses; break; // Assuming same as 2
+                default: 
+                    rent = property.BaseRent;
+                    // Double rent for monopoly with no houses
+                    if (property.IsPartOfMonopoly && property.HouseCount == 0)
+                        rent *= 2;
+                    break;
+            }
+            
+            return rent;
+        }
+        
+        public int CalculateRailroadRent(Property railroad, Player owner)
+        {
+            if (owner == null) return 0;
+            int ownedCount = owner.OwnedRailroads;
+            return 25 * (1 << (ownedCount - 1)); // 25, 50, 100, 200
+        }
+        
+        public int CalculateUtilityRent(Property utility, Player owner, int diceRoll)
+        {
+            if (owner == null) return 0;
+            int multiplier = owner.OwnedUtilities == 1 ? 4 : 10;
+            return diceRoll * multiplier;
+        }
+        
+        public bool CanBuyHouse(Player player, Property property)
+        {
+            if (player == null || property == null) return false;
+            if (!property.IsPartOfMonopoly) return false;
+            if (property.IsMortgaged) return false;
+            if (property.HasHotel) return false;
+            if (property.HouseCount >= 4) return false;
+            if (player.Money < property.HouseCost) return false;
+            return true;
+        }
+        
+        public bool CanBuyHouseInMonopoly(Player player, Property property, List<Property> monopoly)
+        {
+            if (!CanBuyHouse(player, property)) return false;
+            
+            // Check if any property in monopoly is mortgaged
+            if (monopoly.Any(p => p.IsMortgaged)) return false;
+            
+            // Check even building rule
+            int minHouses = monopoly.Min(p => p.HouseCount);
+            return property.HouseCount <= minHouses;
+        }
+        
+        public bool CanBuyHotel(Player player, Property property)
+        {
+            if (player == null || property == null) return false;
+            if (property.HouseCount != 4) return false;
+            if (property.HasHotel) return false;
+            if (property.IsMortgaged) return false;
+            if (player.Money < property.HouseCost) return false;
+            return true;
+        }
+        
+        public ValidationResult ValidateTrade(TradeOffer trade)
+        {
+            if (trade == null)
+                return new ValidationResult { IsValid = false, ErrorMessage = "Trade is null" };
+            
+            if (!trade.BothPartiesAgree)
+                return new ValidationResult { IsValid = false, ErrorMessage = "Both parties must agree" };
+            
+            // Check if offering player has enough money
+            if (trade.OfferedMoney > trade.OfferingPlayer.Money)
+                return new ValidationResult { IsValid = false, ErrorMessage = "Offering player has insufficient funds" };
+            
+            // Check if receiving player has enough money
+            if (trade.RequestedMoney > trade.ReceivingPlayer.Money)
+                return new ValidationResult { IsValid = false, ErrorMessage = "Receiving player has insufficient funds" };
+            
+            // Check if any offered properties have buildings
+            if (trade.OfferedProperties != null)
+            {
+                foreach (var prop in trade.OfferedProperties)
+                {
+                    if (prop.HouseCount > 0 || prop.HasHotel)
+                        return new ValidationResult { IsValid = false, ErrorMessage = "Cannot trade properties with buildings" };
+                }
+            }
+            
+            // Check if any requested properties have buildings
+            if (trade.RequestedProperties != null)
+            {
+                foreach (var prop in trade.RequestedProperties)
+                {
+                    if (prop.HouseCount > 0 || prop.HasHotel)
+                        return new ValidationResult { IsValid = false, ErrorMessage = "Cannot trade properties with buildings" };
+                }
+            }
+            
+            // Mortgaged properties are allowed in trades
+            return new ValidationResult { IsValid = true };
+        }
+        
+        public void ProcessBankruptcy(Player bankrupt, Player creditor)
+        {
+            if (bankrupt == null) return;
+            
+            bankrupt.IsBankrupt = true;
+            
+            // Transfer all properties to creditor (or bank if creditor is null)
+            if (bankrupt.Properties != null)
+            {
+                foreach (var property in bankrupt.Properties)
+                {
+                    // Remove buildings
+                    property.HouseCount = 0;
+                    property.HasHotel = false;
+                    
+                    // Unmortgage
+                    property.IsMortgaged = false;
+                    
+                    // Transfer ownership
+                    property.Owner = creditor;
+                }
+            }
+            
+            // Transfer money if creditor exists
+            if (creditor != null)
+            {
+                creditor.Money += bankrupt.Money;
+            }
+            
+            bankrupt.Money = 0;
+        }
+        
+        public bool IsBankrupt(Player player, int debt)
+        {
+            if (player == null) return true;
+            
+            int totalAssets = player.Money;
+            
+            // Add property values
+            if (player.Properties != null)
+            {
+                foreach (var property in player.Properties)
+                {
+                    totalAssets += property.MortgageValue;
+                    totalAssets += property.HouseCount * (property.HouseCost / 2);
+                    if (property.HasHotel)
+                        totalAssets += property.HouseCost / 2;
+                }
+            }
+            
+            return totalAssets < debt;
+        }
+        
+        public void SendToJail(Player player)
+        {
+            if (player == null) return;
+            player.IsInJail = true;
+            player.Position = 10; // Jail position
+            player.TurnsInJail = 0;
+        }
+        
+        public bool CanLeaveJail(Player player, int dice1, int dice2)
+        {
+            if (player == null || !player.IsInJail) return false;
+            return dice1 == dice2; // Doubles
+        }
+        
+        public ActionResult PayToLeaveJail(Player player)
+        {
+            if (player == null)
+                return new ActionResult { Success = false, ErrorMessage = "Player is null" };
+            
+            if (!player.IsInJail)
+                return new ActionResult { Success = false, ErrorMessage = "Player is not in jail" };
+            
+            if (player.Money < 50)
+                return new ActionResult { Success = false, ErrorMessage = "Insufficient funds" };
+            
+            player.Money -= 50;
+            player.IsInJail = false;
+            player.TurnsInJail = 0;
+            
+            return new ActionResult { Success = true };
+        }
+        
+        public ActionResult UseGetOutOfJailFreeCard(Player player)
+        {
+            if (player == null)
+                return new ActionResult { Success = false, ErrorMessage = "Player is null" };
+            
+            if (!player.IsInJail)
+                return new ActionResult { Success = false, ErrorMessage = "Player is not in jail" };
+            
+            if (player.GetOutOfJailFreeCards <= 0)
+                return new ActionResult { Success = false, ErrorMessage = "No Get Out of Jail Free cards" };
+            
+            player.GetOutOfJailFreeCards--;
+            player.IsInJail = false;
+            player.TurnsInJail = 0;
+            
+            return new ActionResult { Success = true };
+        }
+        
+        public bool MustLeaveJail(Player player)
+        {
+            if (player == null || !player.IsInJail) return false;
+            return player.TurnsInJail >= 3;
+        }
+        
+        public void CollectPassGo(Player player)
+        {
+            if (player != null)
+                player.Money += 200;
+        }
+        
+        public void ProcessLandingOnGo(Player player)
+        {
+            if (player != null)
+                player.Money += 200;
+        }
+        
+        public void ConfigureFreeParking(bool collectMoney)
+        {
+            _freeParkingCollectMoney = collectMoney;
+        }
+        
+        public void ProcessLandingOnFreeParking(Player player)
+        {
+            if (_freeParkingCollectMoney && player != null && _context != null)
+            {
+                player.Money += _context.FreeParkingPool;
+                _context.FreeParkingPool = 0;
+            }
+        }
+        
+        public Auction StartAuction(Property property, List<Player> players)
+        {
+            if (property == null || players == null || players.Count == 0)
+                return null;
+            
+            return new Auction
+            {
+                Property = property,
+                Participants = new List<Player>(players),
+                Bids = new Dictionary<Player, int>()
+            };
+        }
+        
+        public void PlaceBid(Auction auction, Player player, int amount)
+        {
+            if (auction == null || player == null) return;
+            auction.Bids[player] = amount;
+        }
+        
+        public Player EndAuction(Auction auction)
+        {
+            if (auction == null || auction.Bids.Count == 0) return null;
+            
+            // Find highest bidder
+            var highestBid = auction.Bids.Max(b => b.Value);
+            
+            // If all players pass (bid 0), return null
+            if (highestBid == 0) return null;
+            
+            var winner = auction.Bids.First(b => b.Value == highestBid).Key;
+            
+            // Transfer property and money
+            auction.Property.Owner = winner;
+            winner.Money -= highestBid;
+            
+            return winner;
+        }
+        
+        public void MortgageProperty(Property property, Player player)
+        {
+            if (property == null || player == null) return;
+            if (property.HouseCount > 0 || property.HasHotel) return;
+            
+            property.IsMortgaged = true;
+            player.Money += property.MortgageValue;
+        }
+        
+        public ActionResult UnmortgageProperty(Property property, Player player)
+        {
+            if (property == null || player == null)
+                return new ActionResult { Success = false, ErrorMessage = "Invalid parameters" };
+            
+            if (!property.IsMortgaged)
+                return new ActionResult { Success = false, ErrorMessage = "Property is not mortgaged" };
+            
+            int unmortgageCost = property.MortgageValue + (property.MortgageValue / 5); // 120% = 100% + 20%
+            
+            if (player.Money < unmortgageCost)
+                return new ActionResult { Success = false, ErrorMessage = "Insufficient funds" };
+            
+            property.IsMortgaged = false;
+            player.Money -= unmortgageCost;
+            
+            return new ActionResult { Success = true };
+        }
+        
+        public bool CanMortgageProperty(Property property)
+        {
+            if (property == null) return false;
+            if (property.IsMortgaged) return false;
+            if (property.HouseCount > 0 || property.HasHotel) return false;
+            return true;
+        }
+        
+        public void ApplyCardEffect(Card card, Player player)
+        {
+            if (card == null || player == null) return;
+            
+            switch (card.Effect)
+            {
+                case CardEffect.AdvanceToGo:
+                    player.Position = 0;
+                    CollectPassGo(player);
+                    break;
+                case CardEffect.GoToJail:
+                    SendToJail(player);
+                    break;
+                case CardEffect.GetOutOfJailFree:
+                    player.GetOutOfJailFreeCards++;
+                    break;
+                case CardEffect.BankError:
+                    player.Money += card.Amount;
+                    break;
+                case CardEffect.DoctorsFee:
+                    player.Money += card.Amount; // Amount is negative for fees
+                    break;
+                case CardEffect.PropertyRepairs:
+                    int cost = 0;
+                    if (player.Properties != null)
+                    {
+                        foreach (var prop in player.Properties)
+                        {
+                            cost += prop.HouseCount * card.HouseCost;
+                            if (prop.HasHotel)
+                                cost += card.HotelCost;
+                        }
+                    }
+                    player.Money -= cost;
+                    break;
+            }
+        }
     }
     
     public class GameContext
@@ -1268,6 +1623,7 @@ namespace MonopolyFrenzy.Tests.Rules
     {
         public Property Property { get; set; }
         public List<Player> Participants { get; set; }
+        public Dictionary<Player, int> Bids { get; set; } = new Dictionary<Player, int>();
     }
     
     public class Card
