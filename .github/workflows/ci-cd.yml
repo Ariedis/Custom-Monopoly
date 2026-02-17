@@ -1,0 +1,133 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  SOLUTION_FILE: 'MonopolyFrenzy.slnx'
+  BUILD_CONFIGURATION: 'Release'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+        
+      - name: Build solution
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        
+      - name: Run tests
+        run: |
+          dotnet test ${{ env.SOLUTION_FILE }} \
+            --configuration ${{ env.BUILD_CONFIGURATION }} \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx" \
+            --collect:"XPlat Code Coverage"
+            
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
+          
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: '**/TestResults/**/coverage.cobertura.xml'
+          
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: '**/TestResults/*.trx'
+          reporter: dotnet-trx
+          fail-on-error: false
+          
+  package:
+    name: Package Application
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+        
+      - name: Build for Release
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        
+      - name: Publish application
+        run: |
+          dotnet publish src/MonopolyFrenzy/MonopolyFrenzy.csproj \
+            --configuration ${{ env.BUILD_CONFIGURATION }} \
+            --output ./publish/MonopolyFrenzy \
+            --no-build
+            
+      - name: Create build info
+        run: |
+          cat > ./publish/MonopolyFrenzy/BUILD_INFO.txt << 'BUILD_EOF'
+          Monopoly Frenzy - Build Information
+          ====================================
+          Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          Commit: ${{ github.sha }}
+          Branch: ${{ github.ref_name }}
+          Workflow: ${{ github.workflow }}
+          Run Number: ${{ github.run_number }}
+          BUILD_EOF
+          
+      - name: Create archive
+        run: |
+          cd publish
+          tar -czf MonopolyFrenzy-${{ github.sha }}.tar.gz MonopolyFrenzy/
+          cd ..
+          
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: monopoly-frenzy-build
+          path: publish/MonopolyFrenzy-${{ github.sha }}.tar.gz
+          retention-days: 30
+          
+      - name: Generate build summary
+        run: |
+          echo "## Build Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- MonopolyFrenzy-${{ github.sha }}.tar.gz" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build completed successfully! :white_check_mark:" >> $GITHUB_STEP_SUMMARY
