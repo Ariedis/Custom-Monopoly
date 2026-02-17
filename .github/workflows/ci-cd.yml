@@ -9,6 +9,11 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+  checks: write
+  statuses: write
+
 env:
   DOTNET_VERSION: '8.0.x'
   SOLUTION_FILE: 'MonopolyFrenzy.slnx'
