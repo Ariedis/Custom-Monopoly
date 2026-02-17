@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using MonopolyFrenzy.Core;
 
 namespace MonopolyFrenzy.Tests.Core
 {
@@ -523,76 +524,4 @@ namespace MonopolyFrenzy.Tests.Core
         
         #endregion
     }
-    
-    #region Test Helper Classes
-    
-    // These classes represent the expected interface for Phase 1 implementation
-    // They are placeholders to show what the tests expect
-    
-    public class GameState
-    {
-        public Board Board { get; private set; }
-        public List<Player> Players { get; private set; }
-        public GamePhase CurrentPhase { get; private set; }
-        public Player CurrentPlayer { get; private set; }
-        public int TurnNumber { get; private set; }
-        public bool CanStartGame => Players != null && Players.Count >= 2 && Players.Count <= 6;
-        
-        public event System.Action<Player> OnPlayerAdded;
-        public event System.Action OnGameStarted;
-        public event System.Action<GamePhase> OnStateChanged;
-        
-        public void Initialize() { }
-        public Player AddPlayer(string name) { return null; }
-        public void StartGame() { }
-        public void EndGame() { }
-        public void NextTurn() { }
-        public string SerializeToJson() { return null; }
-        public static GameState DeserializeFromJson(string json) { return null; }
-        public GameState Clone() { return null; }
-    }
-    
-    public class Board
-    {
-        public List<Space> Spaces { get; set; }
-    }
-    
-    public class Space
-    {
-        public int Index { get; set; }
-        public string Name { get; set; }
-        public SpaceType Type { get; set; }
-    }
-    
-    public enum SpaceType
-    {
-        Go,
-        Property,
-        Railroad,
-        Utility,
-        Tax,
-        Chance,
-        CommunityChest,
-        Jail,
-        FreeParking,
-        GoToJail
-    }
-    
-    public class Player
-    {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public int Money { get; set; }
-        public int Position { get; set; }
-        public bool IsBankrupt { get; set; }
-    }
-    
-    public enum GamePhase
-    {
-        Setup,
-        Playing,
-        GameOver
-    }
-    
-    #endregion
 }
