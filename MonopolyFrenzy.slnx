@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MonopolyFrenzy.Tests/MonopolyFrenzy.Tests.csproj" />
+    <Project Path="src/MonopolyFrenzy/MonopolyFrenzy.csproj" />
+  </Folder>
+</Solution>
