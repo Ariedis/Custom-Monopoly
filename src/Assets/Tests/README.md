@@ -1,14 +1,16 @@
-# Monopoly Frenzy - Phase 1 Test Suite
+# Monopoly Frenzy - Test Suite
 
 ## Overview
 
-This directory contains comprehensive test cases for Phase 1 of the Monopoly Frenzy project, covering all core game logic and architecture as specified in the Implementation Plan.
+This directory contains comprehensive test cases for the Monopoly Frenzy project, covering both Phase 1 (Core Game Logic) and Phase 2 (User Interface & Basic Gameplay).
 
-**Test Coverage:** Targeting 85%+ code coverage on Phase 1 components
+**Test Coverage:** 
+- Phase 1: Targeting 85%+ code coverage on game logic
+- Phase 2: Targeting 90%+ code coverage on UI components
 
 **Test Framework:** Unity Test Framework (NUnit-based)
 
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-02-18
 
 ---
 
@@ -16,19 +18,28 @@ This directory contains comprehensive test cases for Phase 1 of the Monopoly Fre
 
 ```
 src/Assets/Tests/
-├── EditMode/                      # Edit Mode Tests (Pure C# logic)
+├── EditMode/                                # Edit Mode Tests (Pure C# logic - Phase 1)
 │   ├── Core/
-│   │   └── GameStateTests.cs      # Game state management tests
+│   │   └── GameStateTests.cs                # Game state management tests
 │   ├── StateMachine/
-│   │   └── StateMachineTests.cs   # State machine and game flow tests
+│   │   └── StateMachineTests.cs             # State machine and game flow tests
 │   ├── Commands/
-│   │   └── CommandTests.cs        # Command pattern implementation tests
+│   │   └── CommandTests.cs                  # Command pattern implementation tests
 │   ├── Rules/
-│   │   └── RulesEngineTests.cs    # Monopoly rules engine tests
+│   │   └── RulesEngineTests.cs              # Monopoly rules engine tests
 │   └── Events/
-│       └── EventSystemTests.cs    # Event system tests
-└── PlayMode/                       # Play Mode Tests (Runtime integration)
-    └── IntegrationTests.cs         # Complete game simulation tests
+│       └── EventSystemTests.cs              # Event system tests
+├── PlayMode/                                # Play Mode Tests (Runtime integration)
+│   ├── IntegrationTests.cs                  # Phase 1: Complete game simulation
+│   └── UI/                                  # Phase 2: UI & Gameplay Tests
+│       ├── MainMenuTests.cs                 # Main menu & game setup
+│       ├── GameBoardTests.cs                # Board display & player tokens
+│       ├── PlayerHUDAndTurnControlTests.cs  # HUD, turn controls, actions
+│       ├── PropertyManagementAndSpecialSituationsTests.cs  # Property mgmt, trading, jail, bankruptcy
+│       ├── GameFlowSettingsAndResponsiveTests.cs          # Save/load, settings, responsive UI
+│       └── Phase2IntegrationTests.cs        # End-to-end UI workflows
+├── TEST-COVERAGE-MATRIX.md                  # Phase 1 test coverage mapping
+└── PHASE-2-TEST-COVERAGE-MATRIX.md          # Phase 2 test coverage mapping
 ```
 
 ---
@@ -343,17 +354,44 @@ Phase 1 should follow TDD principles:
 
 ---
 
-## Acceptance Criteria Mapping
+## Phase 1 Test Suites
 
-| User Story | Test Suite | Coverage |
-|------------|------------|----------|
-| 1.1: Game State Management | GameStateTests.cs | 35+ tests |
-| 1.2: State Machine | StateMachineTests.cs | 25+ tests |
-| 1.3: Command Pattern | CommandTests.cs | 50+ tests |
-| 1.4: Rules Engine | RulesEngineTests.cs | 80+ tests |
-| 1.5: Event System | EventSystemTests.cs | 40+ tests |
-| **Integration** | IntegrationTests.cs | 30+ tests |
-| **Total** | **6 test suites** | **260+ tests** |
+### EditMode Tests (Pure C# Logic)
+
+| Test Suite | User Story | Test Count | Status |
+|------------|------------|------------|--------|
+| GameStateTests.cs | 1.1: Game State Management | 35+ | ✅ Complete |
+| StateMachineTests.cs | 1.2: State Machine | 25+ | ✅ Complete |
+| CommandTests.cs | 1.3: Command Pattern | 50+ | ✅ Complete |
+| RulesEngineTests.cs | 1.4: Rules Engine | 80+ | ✅ Complete |
+| EventSystemTests.cs | 1.5: Event System | 40+ | ✅ Complete |
+
+### PlayMode Tests (Integration)
+
+| Test Suite | Coverage | Test Count | Status |
+|------------|----------|------------|--------|
+| IntegrationTests.cs | Complete game scenarios | 30+ | ✅ Complete |
+
+**Phase 1 Total:** 260+ tests
+
+---
+
+## Phase 2 Test Suites
+
+### PlayMode/UI Tests (User Interface & Gameplay)
+
+| Test Suite | User Stories | Test Count | Status |
+|------------|--------------|------------|--------|
+| MainMenuTests.cs | 2.1-2.2: Main Menu & Setup | 25+ | ✅ Complete |
+| GameBoardTests.cs | 2.3-2.4: Board & Tokens | 22+ | ✅ Complete |
+| PlayerHUDAndTurnControlTests.cs | 2.5-2.10: HUD & Turn Controls | 55+ | ✅ Complete |
+| PropertyManagementAndSpecialSituationsTests.cs | 2.11-2.19: Property Mgmt, Trading, Jail | 80+ | ✅ Complete |
+| GameFlowSettingsAndResponsiveTests.cs | 2.20-2.25: Save/Load, Settings, Responsive | 70+ | ✅ Complete |
+| Phase2IntegrationTests.cs | Complete UI workflows | 20+ | ✅ Complete |
+
+**Phase 2 Total:** 310+ tests
+
+**Overall Total:** 570+ comprehensive tests
 
 ---
 
@@ -410,3 +448,96 @@ When adding new tests:
 2. Run tests frequently to validate progress
 3. Achieve 85%+ code coverage
 4. All tests passing before Phase 2
+
+---
+
+## Test Suite Status
+
+### Phase 1 Tests
+**Status:** ✅ Complete - Ready for Phase 1 Implementation  
+**Test Count:** 260+ comprehensive tests  
+**Coverage Target:** 85%+
+
+### Phase 2 Tests  
+**Status:** ✅ Complete - Ready for Phase 2 Implementation  
+**Test Count:** 310+ comprehensive tests  
+**Coverage Target:** 90%+
+
+### Overall
+**Total Tests:** 570+  
+**Phases Covered:** Phase 1 (Core Logic) + Phase 2 (UI & Gameplay)
+
+---
+
+## Next Steps
+
+### For Phase 1 Implementation:
+1. Begin Phase 1 implementation using TDD approach
+2. Run EditMode tests frequently to validate logic
+3. Ensure all Phase 1 tests pass before starting Phase 2
+4. Achieve 85%+ code coverage on core game logic
+
+### For Phase 2 Implementation:
+1. Ensure Phase 1 is complete and all tests pass
+2. Begin Phase 2 UI implementation using existing tests
+3. Run PlayMode/UI tests to validate UI components
+4. Test integration between UI and Phase 1 logic
+5. Achieve 90%+ code coverage on UI components
+6. Validate performance benchmarks (60 FPS, <50ms response)
+7. Test responsive design across resolutions (1280x720 to 4K)
+
+---
+
+## Documentation
+
+- **[Phase 1 Test Coverage Matrix](TEST-COVERAGE-MATRIX.md)** - Detailed mapping of Phase 1 acceptance criteria to tests
+- **[Phase 2 Test Coverage Matrix](PHASE-2-TEST-COVERAGE-MATRIX.md)** - Detailed mapping of Phase 2 acceptance criteria to tests
+- **[Phase 1 Implementation Plan](../../../planning/IMPLEMENTATION-PLAN.md)** - Phase 1 requirements and specifications
+- **[Phase 2 Implementation Plan](../../../planning/PHASE-2-IMPLEMENTATION-PLAN.md)** - Phase 2 requirements and specifications
+- **[Architecture Summary](../../../specifications/ARCHITECTURE-SUMMARY.md)** - System architecture overview
+
+---
+
+## Test Execution
+
+### Run All Tests
+```bash
+# Run all EditMode tests (Phase 1)
+Unity -runTests -testPlatform EditMode -testResults results-phase1.xml -projectPath /path/to/project
+
+# Run all PlayMode tests (Phase 1 Integration + Phase 2 UI)
+Unity -runTests -testPlatform PlayMode -testResults results-phase2.xml -projectPath /path/to/project
+```
+
+### Run Specific Test Suites
+```bash
+# Run only Phase 1 tests
+Unity -runTests -testPlatform EditMode -testFilter "MonopolyFrenzy.Tests" -projectPath /path/to/project
+
+# Run only Phase 2 UI tests
+Unity -runTests -testPlatform PlayMode -testFilter "MonopolyFrenzy.Tests.UI" -projectPath /path/to/project
+
+# Run only integration tests
+Unity -runTests -testPlatform PlayMode -testFilter "IntegrationTests" -projectPath /path/to/project
+```
+
+---
+
+## Success Criteria
+
+### Phase 1 Complete When:
+- ✅ All 260+ Phase 1 tests passing (100%)
+- ✅ Code coverage ≥85%
+- ✅ Performance benchmarks met
+- ✅ No critical bugs
+- ✅ Documentation complete
+
+### Phase 2 Complete When:
+- ✅ All 310+ Phase 2 tests passing (100%)
+- ✅ All 260+ Phase 1 tests still passing
+- ✅ UI test coverage ≥90%
+- ✅ Performance: 60 FPS, <50ms response, <3s scene load
+- ✅ Responsive UI working (1280x720 to 4K)
+- ✅ Keyboard navigation functional
+- ✅ Save/load working flawlessly
+- ✅ Zero UI crashes during 30-minute playtest
